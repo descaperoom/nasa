@@ -1,0 +1,205 @@
+
+<style>
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .ctrl { display: flex; flex-direction: column; gap: 4px; }
+  .ctrl label { font-size: 12px; color: var(--color-text-secondary); }
+  .ctrl-row { display: flex; align-items: center; gap: 8px; }
+  .ctrl-row input[type=range] { flex: 1; }
+  .val { font-size: 13px; font-weight: 500; min-width: 52px; text-align: right; color: var(--color-text-primary); }
+  .sec-label { grid-column: 1/-1; font-size: 11px; color: var(--color-text-tertiary); letter-spacing:.05em; text-transform:uppercase; margin-bottom:-4px; }
+  .divider { grid-column:1/-1; border:none; border-top:0.5px solid var(--color-border-tertiary); margin:2px 0; }
+  .milestones { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .ms { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 14px; flex: 1; min-width: 100px; }
+  .ms-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 2px; }
+  .ms-val { font-size: 16px; font-weight: 500; color: #BA7517; }
+  .ms-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 1px; }
+  .table-wrap { overflow-x: auto; margin-top: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-align: left; padding: 6px 10px; border-bottom: 0.5px solid var(--color-border-tertiary); white-space: nowrap; }
+  td { padding: 7px 10px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  td.amber { color: #BA7517; font-weight: 500; }
+  td.green { color: #1D9E75; }
+  td.muted { color: var(--color-text-secondary); }
+  .bar-cell { width: 120px; }
+  .bar-bg { background: var(--color-background-secondary); border-radius: 3px; height: 8px; overflow: hidden; }
+  .bar-fill { background: #EF9F27; height: 8px; border-radius: 3px; transition: width 0.3s; }
+  .reinvest-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .reinvest-row label { font-size: 13px; color: var(--color-text-secondary); }
+  .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider-sw { position: absolute; cursor: pointer; inset: 0; background: var(--color-border-secondary); border-radius: 20px; transition: .2s; }
+  .slider-sw:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .2s; }
+  input:checked + .slider-sw { background: #EF9F27; }
+  input:checked + .slider-sw:before { transform: translateX(16px); }
+</style>
+
+<div style="padding: 1rem 0;">
+  <div class="controls">
+    <div class="sec-label">Investment</div>
+    <div class="ctrl">
+      <label>Initial investment</label>
+      <div class="ctrl-row"><input type="range" id="principal" min="1000" max="200000" step="1000" value="10000"><span class="val" id="vp">€10,000</span></div>
+    </div>
+    <div class="ctrl">
+      <label>Monthly contribution</label>
+      <div class="ctrl-row"><input type="range" id="monthly" min="0" max="2000" step="50" value="200"><span class="val" id="vm">€200</span></div>
+    </div>
+    <div class="ctrl">
+      <label>Annual growth rate</label>
+      <div class="ctrl-row"><input type="range" id="rate" min="0" max="20" step="0.5" value="7"><span class="val" id="vr">7%</span></div>
+    </div>
+    <div class="ctrl">
+      <label>Years</label>
+      <div class="ctrl-row"><input type="range" id="years" min="1" max="40" step="1" value="20"><span class="val" id="vy">20 yrs</span></div>
+    </div>
+    <hr class="divider">
+    <div class="sec-label">Dividends</div>
+    <div class="ctrl">
+      <label>Dividend yield (annual)</label>
+      <div class="ctrl-row"><input type="range" id="yield" min="0" max="8" step="0.25" value="2.5"><span class="val" id="vd">2.5%</span></div>
+    </div>
+    <div class="ctrl">
+      <label>Dividend growth rate</label>
+      <div class="ctrl-row"><input type="range" id="dgrowth" min="0" max="10" step="0.5" value="3"><span class="val" id="vg">3%</span></div>
+    </div>
+  </div>
+
+  <div class="reinvest-row">
+    <label class="switch"><input type="checkbox" id="reinvest" checked><span class="slider-sw"></span></label>
+    <label for="reinvest">Reinvest dividends</label>
+  </div>
+
+  <div class="milestones" id="milestones"></div>
+
+  <div style="position: relative; width: 100%; height: 220px; margin-bottom: 20px;">
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Portfolio value</th>
+          <th>Annual dividend</th>
+          <th>Monthly income</th>
+          <th>Yield on cost</th>
+          <th style="width:130px;">Monthly vs year 1</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const fmt = v => '€' + Math.round(v).toLocaleString('de-DE');
+const fmt2 = v => '€' + v.toFixed(2);
+let chart;
+
+function compute() {
+  const principal = +document.getElementById('principal').value;
+  const monthly = +document.getElementById('monthly').value;
+  const rate = +document.getElementById('rate').value;
+  const years = +document.getElementById('years').value;
+  const divYield = +document.getElementById('yield').value / 100;
+  const dGrowth = +document.getElementById('dgrowth').value / 100;
+  const reinvest = document.getElementById('reinvest').checked;
+
+  document.getElementById('vp').textContent = fmt(principal);
+  document.getElementById('vm').textContent = fmt(monthly);
+  document.getElementById('vr').textContent = rate + '%';
+  document.getElementById('vy').textContent = years + ' yrs';
+  document.getElementById('vd').textContent = (+document.getElementById('yield').value).toFixed(2) + '%';
+  document.getElementById('vg').textContent = (+document.getElementById('dgrowth').value) + '%';
+
+  const rows = [];
+  let balance = principal;
+  let totalInvested = principal;
+  let currentYield = divYield;
+
+  for (let y = 1; y <= years; y++) {
+    balance = balance * (1 + rate / 100) + monthly * 12;
+    totalInvested += monthly * 12;
+    const annualDiv = balance * currentYield;
+    const monthlyDiv = annualDiv / 12;
+    const yieldOnCost = (annualDiv / totalInvested) * 100;
+    rows.push({ year: y, balance, annualDiv, monthlyDiv, yieldOnCost, totalInvested });
+    if (reinvest) balance += annualDiv;
+    currentYield *= (1 + dGrowth);
+  }
+
+  const baseMonthly = rows[0].monthlyDiv;
+  const maxMonthly = Math.max(...rows.map(r => r.monthlyDiv));
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = rows.map(r => {
+    const ratio = maxMonthly > 0 ? (r.monthlyDiv / maxMonthly) * 100 : 0;
+    return `<tr>
+      <td class="muted">Yr ${r.year}</td>
+      <td>${fmt(r.balance)}</td>
+      <td class="amber">${fmt(r.annualDiv)}</td>
+      <td class="amber">${fmt2(r.monthlyDiv)}</td>
+      <td class="green">${r.yieldOnCost.toFixed(1)}%</td>
+      <td class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:${ratio.toFixed(1)}%"></div></div><span style="font-size:11px;color:var(--color-text-tertiary);margin-left:6px;">${baseMonthly > 0 ? (r.monthlyDiv / baseMonthly).toFixed(1) + 'x' : '—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  const milestones = document.getElementById('milestones');
+  const targets = [100, 500, 1000, 2000, 5000];
+  const hits = targets.map(t => {
+    const hit = rows.find(r => r.monthlyDiv >= t);
+    return { target: t, year: hit ? hit.year : null };
+  }).filter(m => m.year !== null || rows[rows.length-1].monthlyDiv < m.target);
+
+  milestones.innerHTML = hits.slice(0, 4).map(m => `
+    <div class="ms">
+      <div class="ms-label">€${m.target}/month</div>
+      <div class="ms-val">${m.year ? 'Year ' + m.year : 'Not reached'}</div>
+      <div class="ms-sub">${m.year ? '≈ €' + (m.target * 12).toLocaleString() + '/yr' : 'extend years'}</div>
+    </div>`).join('');
+
+  const labels = rows.map(r => 'Yr ' + r.year);
+  const data = rows.map(r => +r.monthlyDiv.toFixed(2));
+
+  if (chart) {
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = data;
+    chart.update();
+  } else {
+    chart = new Chart(document.getElementById('chart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Monthly dividend',
+          data,
+          backgroundColor: '#EF9F27',
+          borderRadius: 3,
+          barPercentage: 0.7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ' €' + ctx.raw.toFixed(2) + '/month' } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#888', font: { size: 11 }, maxTicksLimit: 12 } },
+          y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { color: '#888', font: { size: 11 }, callback: v => '€' + v } }
+        }
+      }
+    });
+  }
+}
+
+['principal','monthly','rate','years','yield','dgrowth','reinvest'].forEach(id => {
+  document.getElementById(id).addEventListener('input', compute);
+  document.getElementById(id).addEventListener('change', compute);
+});
+compute();
+</script>
