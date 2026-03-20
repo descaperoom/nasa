@@ -1,139 +1,950 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TERMINAL: ASTEROID CRISIS</title>
-    <style>
-        /* Retro Terminal Styling */
-        body {
-            background-color: #0a0a0a;
-            color: #33ff33; /* Classic Terminal Green */
-            font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            text-transform: uppercase;
-        }
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NASA MCC — ASTEROID CRISIS — AC-2024-001</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #0a2fff;
+      --bg-deep:  #0820cc;
+      --txt:      #ffffff;
+      --txt-dim:  #aac4ff;
+      --txt-hi:   #ffffff;
+      --amber:    #ffcc44;
+      --cyan:     #88ddff;
+      --dim:      rgba(255,255,255,0.45);
+    }
 
-        /* Scanline Overlay Effect */
-        body::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 2;
-            background-size: 100% 4px, 3px 100%;
-            pointer-events: none;
-        }
+    * { margin:0; padding:0; box-sizing:border-box; }
 
-        #terminal {
-            width: 80%;
-            max-width: 900px;
-            border: 2px solid #33ff33;
-            padding: 40px;
-            box-shadow: 0 0 20px rgba(51, 255, 51, 0.2);
-            background: rgba(0, 20, 0, 0.9);
-            position: relative;
-        }
+    html, body {
+      width: 100%; min-height: 100%;
+      background: #000;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--txt);
+      overflow-x: hidden;
+    }
 
-        h1 {
-            font-size: 2.5rem;
-            text-align: center;
-            border-bottom: 2px solid #33ff33;
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
+    /* ── CRT SCREEN WRAPPER ─────────────────────────────── */
+    #crt {
+      position: relative;
+      background: var(--bg);
+      min-height: 100vh;
+      padding: 0;
+      box-shadow:
+        inset 0 0 80px rgba(0,0,60,0.5),
+        inset 0 0 200px rgba(0,0,80,0.3);
+    }
 
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
-            font-weight: bold;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #33ff33;
-            padding-bottom: 5px;
-        }
+    /* ── SCANLINES ──────────────────────────────────────── */
+    #crt::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 30, 0.38) 0px,
+        rgba(0, 0, 30, 0.38) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
 
-        .glitch {
-            animation: pulse 2s infinite;
-        }
+    /* ── PHOSPHOR GLOW / HAZE ───────────────────────────── */
+    #crt::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: radial-gradient(
+        ellipse 100% 90% at 50% 50%,
+        rgba(40,80,255,0.08) 0%,
+        rgba(0,0,80,0.25) 70%,
+        rgba(0,0,0,0.55) 100%
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
+    /* ── CONSTANT FLICKER — more aggressive ────────────── */
+    @keyframes flicker {
+      0%   { opacity: 1;    }
+      2%   { opacity: 0.88; }
+      3%   { opacity: 1;    }
+      8%   { opacity: 0.95; }
+      9%   { opacity: 1;    }
+      15%  { opacity: 0.92; }
+      16%  { opacity: 1;    }
+      22%  { opacity: 0.97; }
+      28%  { opacity: 0.89; }
+      29%  { opacity: 1;    }
+      35%  { opacity: 0.94; }
+      41%  { opacity: 0.91; }
+      42%  { opacity: 1;    }
+      50%  { opacity: 0.96; }
+      57%  { opacity: 0.87; }
+      58%  { opacity: 1;    }
+      65%  { opacity: 0.93; }
+      72%  { opacity: 0.98; }
+      78%  { opacity: 0.90; }
+      79%  { opacity: 1;    }
+      86%  { opacity: 0.95; }
+      93%  { opacity: 0.88; }
+      94%  { opacity: 1;    }
+      100% { opacity: 0.97; }
+    }
+    #crt { animation: flicker 3.5s infinite steps(1); }
 
-        .story-box {
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
+    /* ── CONSTANT BRIGHTNESS PULSE (phosphor warmth) ────── */
+    @keyframes phosphor-pulse {
+      0%,100% { filter: brightness(1)    saturate(1); }
+      20%     { filter: brightness(1.04) saturate(1.05); }
+      45%     { filter: brightness(0.97) saturate(0.97); }
+      70%     { filter: brightness(1.02) saturate(1.02); }
+    }
+    #crt { animation: flicker 3.5s infinite steps(1), phosphor-pulse 2.1s infinite ease-in-out; }
 
-        .objective {
-            background: #33ff33;
-            color: #000;
-            padding: 10px;
-            font-weight: bold;
-            text-align: center;
-        }
+    /* ── CONSTANT HORIZONTAL DRIFT ──────────────────────── */
+    @keyframes h-drift {
+      0%               { transform: translateX(0)    skewY(0deg); }
+      8%               { transform: translateX(-1px) skewY(0deg); }
+      16%              { transform: translateX(1px)  skewY(0.02deg); }
+      24%              { transform: translateX(0)    skewY(0deg); }
+      31%              { transform: translateX(-2px) skewY(-0.03deg); }
+      38%              { transform: translateX(0)    skewY(0deg); }
+      52%              { transform: translateX(1px)  skewY(0.02deg); }
+      60%              { transform: translateX(-1px) skewY(0deg); }
+      67%              { transform: translateX(2px)  skewY(0.04deg); }
+      74%              { transform: translateX(0)    skewY(0deg); }
+      88%              { transform: translateX(-1px) skewY(-0.02deg); }
+      95%              { transform: translateX(1px)  skewY(0deg); }
+      100%             { transform: translateX(0)    skewY(0deg); }
+    }
+    /* rolling scan (always on, slow) */
+    @keyframes slow-roll {
+      0%   { background-position: 0 0; }
+      100% { background-position: 0 300px; }
+    }
+    #content { animation: h-drift 4.8s infinite ease-in-out; }
 
-        .btn {
-            display: block;
-            width: fit-content;
-            margin: 30px auto 0;
-            padding: 15px 30px;
-            border: 2px solid #33ff33;
-            background: transparent;
-            color: #33ff33;
-            cursor: pointer;
-            font-family: inherit;
-            font-weight: bold;
-            text-decoration: none;
-        }
+    /* ── ALWAYS-ON SLOW ROLLING BAND ────────────────────── */
+    #slow-roll-band {
+      position: fixed; inset: 0; pointer-events: none; z-index: 995;
+      background: repeating-linear-gradient(
+        180deg,
+        transparent            0px,
+        transparent            58px,
+        rgba(255,255,255,0.022) 59px,
+        rgba(255,255,255,0.045) 60px,
+        rgba(255,255,255,0.022) 61px,
+        transparent            62px,
+        transparent            120px
+      );
+      animation: slow-roll 6s linear infinite;
+    }
 
-        .btn:hover {
-            background: #33ff33;
-            color: #000;
-        }
+    /* ── ALWAYS-ON RGB FRINGE ON TEXT ───────────────────── */
+    @keyframes rgb-drift {
+      0%,100% {
+        text-shadow:
+          1px  0   rgba(255,80,80,0.18),
+          -1px 0   rgba(0,200,255,0.18),
+          0 0 6px  rgba(150,190,255,0.7),
+          0 0 12px rgba(100,140,255,0.3);
+      }
+      25% {
+        text-shadow:
+          -1px 0   rgba(255,80,80,0.22),
+          1px  0   rgba(0,200,255,0.22),
+          0 0 6px  rgba(150,190,255,0.7),
+          0 0 12px rgba(100,140,255,0.3);
+      }
+      50% {
+        text-shadow:
+          2px  0   rgba(255,80,80,0.12),
+          -2px 0   rgba(0,200,255,0.12),
+          0 0 8px  rgba(150,190,255,0.8),
+          0 0 14px rgba(100,140,255,0.35);
+      }
+      75% {
+        text-shadow:
+          0    1px rgba(255,80,80,0.15),
+          0   -1px rgba(0,200,255,0.15),
+          0 0 6px  rgba(150,190,255,0.7),
+          0 0 12px rgba(100,140,255,0.3);
+      }
+    }
+    p, div, span, td, th, li {
+      animation: rgb-drift 2.3s infinite ease-in-out;
+    }
 
-        .warning {
-            color: #ff3333;
-            text-align: center;
-            font-weight: bold;
-        }
-    </style>
+    /* ── CONTENT ────────────────────────────────────────── */
+    #content {
+      position: relative; z-index: 10;
+      padding: 18px 28px 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ── TEXT GLOW — handled by rgb-drift animation above ── */
+
+    /* ── HORIZONTAL RULE ────────────────────────────────── */
+    .hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.55);
+      margin: 6px 0;
+      box-shadow: 0 0 6px rgba(150,190,255,0.5);
+    }
+    .hr-dbl {
+      border-top: 1px solid rgba(255,255,255,0.55);
+      margin: 0 0 1px;
+      box-shadow: 0 0 6px rgba(150,190,255,0.5);
+    }
+    .hr-dbl + .hr-dbl { margin-top: 1px; }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    #header {
+      text-align: center;
+      padding: 10px 0 6px;
+      letter-spacing: 0.18em;
+    }
+    #header .org  { font-size: 11px; color: var(--txt-dim); }
+    #header .title{ font-size: 18px; font-weight: bold; letter-spacing: 0.22em; }
+    #header .sub  { font-size: 11px; color: var(--txt-dim); letter-spacing: 0.3em; }
+
+    /* ── TOP ROW: status fields ─────────────────────────── */
+    .top-fields {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 2px 30px;
+      font-size: 11px;
+      color: var(--txt-dim);
+      margin: 4px 0;
+    }
+    .top-fields span b { color: var(--txt); }
+
+    /* ── TWO-COL LAYOUT ─────────────────────────────────── */
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 30px;
+      margin-top: 4px;
+    }
+    .cols-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0 24px;
+      margin-top: 4px;
+    }
+
+    /* ── SECTION ────────────────────────────────────────── */
+    .sect { margin-top: 10px; }
+    .sect-hdr {
+      font-size: 11px; letter-spacing: 0.22em;
+      color: var(--txt); margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    /* ── DATA TABLE ─────────────────────────────────────── */
+    table.data {
+      width: 100%; border-collapse: collapse;
+      font-size: 12px;
+    }
+    table.data td {
+      padding: 1px 6px 1px 0;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    table.data td:first-child { color: var(--txt-dim); width: 52%; }
+    table.data td:last-child  { color: var(--txt); }
+    .val-warn { color: var(--amber) !important;
+      text-shadow: 0 0 8px rgba(255,200,50,.9), 0 0 16px rgba(255,160,0,.4) !important; }
+    .val-crit { color: #ff8888 !important;
+      text-shadow: 0 0 8px rgba(255,80,80,.9) !important; }
+
+    /* ── MISSION TEXT / BRIEFING ────────────────────────── */
+    .briefing-body {
+      font-size: 12px; line-height: 1.65;
+      color: var(--txt);
+    }
+    .briefing-body p { margin-bottom: 6px; }
+
+    /* ── SYSTEM STATUS BARS (text) ──────────────────────── */
+    .sys-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 2px 0; }
+    .sys-name { width: 160px; color: var(--txt-dim); flex-shrink:0; }
+    .sys-bar  { flex: 1; font-size: 12px; color: var(--txt); letter-spacing: 0; }
+    .sys-pct  { width: 60px; text-align: right; flex-shrink:0; }
+
+    /* ── PHASE LIST ─────────────────────────────────────── */
+    .phase-row { display: flex; gap: 10px; font-size: 12px; margin: 2px 0; }
+    .ph-sym  { width: 16px; text-align:center; flex-shrink:0; }
+    .ph-name { width: 180px; flex-shrink:0; }
+    .ph-status { color: var(--txt-dim); }
+    .ph-ok   { color: var(--txt); }
+    .ph-live { color: var(--amber);
+      text-shadow: 0 0 8px rgba(255,200,50,.9) !important; }
+    .ph-pend { color: rgba(255,255,255,.4); text-shadow: none !important; }
+
+    /* ── PERSONNEL ──────────────────────────────────────── */
+    .pers-row { display:flex; gap:14px; font-size:12px; margin:2px 0; }
+    .pers-id  { width:36px; }
+    .pers-name{ width:160px; }
+    .pers-role{ flex:1; color:var(--txt-dim); }
+    .pers-stat{ width:60px; text-align:right; }
+
+    /* ── COUNTDOWN ──────────────────────────────────────── */
+    #countdown-row {
+      display: flex; justify-content: center; align-items: baseline;
+      gap: 6px; padding: 10px 0 6px;
+      letter-spacing: 0.1em;
+    }
+    .cd-lbl { font-size: 11px; color: var(--txt-dim); }
+    .cd-num  {
+      font-size: 28px; font-weight: bold;
+      color: var(--amber);
+      text-shadow: 0 0 12px rgba(255,200,50,.9), 0 0 30px rgba(255,160,0,.4);
+    }
+    .cd-colon { font-size: 26px; color: rgba(255,200,50,.5); animation: blink 1s step-end infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── LAUNCH BUTTON ──────────────────────────────────── */
+    #launch-btn-wrap {
+      text-align: center; margin-top: 14px;
+    }
+    #launch-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px; letter-spacing: 0.28em;
+      color: var(--bg);
+      background: var(--txt);
+      border: none; cursor: pointer;
+      padding: 10px 40px;
+      text-transform: uppercase;
+      text-shadow: none;
+      box-shadow: 0 0 20px rgba(255,255,255,.6);
+      transition: box-shadow .2s;
+    }
+    #launch-btn:hover {
+      box-shadow: 0 0 40px rgba(255,255,255,1);
+    }
+    .btn-note {
+      font-size: 10px; color: var(--txt-dim);
+      letter-spacing: .2em; margin-top: 5px;
+    }
+
+    /* ── LOG ────────────────────────────────────────────── */
+    #sys-log { font-size: 11px; }
+    .log-line { display:flex; gap:10px; margin:1px 0; }
+    .log-ts  { color: var(--txt-dim); flex-shrink:0; }
+    .log-msg { color: var(--txt); }
+    .log-warn{ color: var(--amber); text-shadow: 0 0 8px rgba(255,200,50,.8) !important; }
+    .log-crit{ color: #ff8888; text-shadow: 0 0 8px rgba(255,80,80,.8) !important; }
+
+    /* ── TICKER ─────────────────────────────────────────── */
+    #ticker {
+      overflow: hidden; font-size: 11px;
+      letter-spacing: .1em; color: var(--amber);
+      text-shadow: 0 0 8px rgba(255,200,50,.8);
+      padding: 4px 0;
+      white-space: nowrap;
+    }
+    .ticker-inner { display: inline-block; animation: ticker 40s linear infinite; }
+    @keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+
+    /* ── CURSOR BLINK ───────────────────────────────────── */
+    .cursor { animation: blink .8s step-end infinite; }
+
+    /* ── VIGNETTE ───────────────────────────────────────── */
+    #vignette {
+      position: fixed; inset:0; z-index: 997; pointer-events:none;
+      background: radial-gradient(ellipse 90% 80% at 50% 50%, transparent 55%, rgba(0,0,0,.65) 100%);
+    }
+
+    /* ── CRT DISTORTION CANVAS ──────────────────────────── */
+    #crt-distort {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 998;
+      opacity: 1;
+    }
+
+    /* ── GLITCH CLASSES applied to #content ────────────── */
+    /* horizontal tear — whole content shifts right briefly */
+    @keyframes glitch-shift {
+      0%                        { transform: translateX(0) skewX(0deg); }
+      10%                       { transform: translateX(-4px) skewX(-0.4deg); }
+      20%                       { transform: translateX(6px) skewX(0.6deg); }
+      30%                       { transform: translateX(-2px) skewX(0deg); }
+      40%                       { transform: translateX(3px); }
+      100%                      { transform: translateX(0) skewX(0deg); }
+    }
+    @keyframes glitch-rgb {
+      0%   { text-shadow: 2px 0 rgba(255,0,0,.35), -2px 0 rgba(0,200,255,.35), 0 0 6px rgba(150,190,255,.7), 0 0 12px rgba(100,140,255,.3); }
+      25%  { text-shadow: -3px 0 rgba(255,0,0,.4), 3px 0 rgba(0,200,255,.4),   0 0 6px rgba(150,190,255,.7), 0 0 12px rgba(100,140,255,.3); }
+      50%  { text-shadow: 2px 0 rgba(0,255,100,.3), -2px 0 rgba(255,0,200,.3), 0 0 6px rgba(150,190,255,.7), 0 0 12px rgba(100,140,255,.3); }
+      75%  { text-shadow: -1px 0 rgba(255,0,0,.25), 1px 0 rgba(0,200,255,.25), 0 0 6px rgba(150,190,255,.7), 0 0 12px rgba(100,140,255,.3); }
+      100% { text-shadow: 0 0 6px rgba(150,190,255,.7), 0 0 12px rgba(100,140,255,.3); }
+    }
+    /* rolling bright band sweeping down */
+    @keyframes roll-band {
+      0%   { background-position: 0 -100vh; }
+      100% { background-position: 0 100vh; }
+    }
+    #roll-band {
+      position: fixed; inset: 0; pointer-events: none; z-index: 996;
+      background: linear-gradient(
+        180deg,
+        transparent 0%,
+        transparent 45%,
+        rgba(255,255,255,0.03) 48%,
+        rgba(255,255,255,0.07) 50%,
+        rgba(255,255,255,0.03) 52%,
+        transparent 55%,
+        transparent 100%
+      );
+      background-size: 100% 200vh;
+      opacity: 0;
+    }
+    #roll-band.rolling {
+      opacity: 1;
+      animation: roll-band 1.1s linear forwards;
+    }
+
+    /* ── RESPONSIVE ─────────────────────────────────────── */
+    @media (max-width:700px) {
+      .cols, .cols-3 { grid-template-columns: 1fr; }
+      #content { padding: 12px 14px; }
+    }
+  </style>
 </head>
 <body>
+<div id="vignette"></div>
+<div id="slow-roll-band"></div>
+<div id="roll-band"></div>
+<canvas id="crt-distort"></canvas>
+<div id="crt">
+<div id="content">
 
-<div id="terminal">
-    <div class="status-bar">
-        <span>SYSTEM: ONLINE</span>
-        <span class="glitch">TIME TO IMPACT: 48:00:00</span>
-    </div>
-
-    <h1>PROJECT: ASTEROID CRISIS</h1>
-
-    <div class="story-box">
-        <p>> INITIALIZING NASA SECURE UPLINK...</p>
-        <p>> ACCESS GRANTED: TEAM ALPHA SCIENTISTS</p>
-        <br>
-        <p>A massive asteroid has been detected on a collision course with Earth. It will enter the atmosphere in 48 hours, at which point total extinction is inevitable. </p>
-        <p>As NASA’s lead engineering team, the responsibility falls on you. You must complete the <strong>Asteroid Destroying Machine</strong> before it's too late.</p>
-    </div>
-
-    <div class="objective">
-        MISSION GOAL: REDIRECT THE ASTEROID AWAY FROM EARTH
-    </div>
-
-    <p class="warning">CAUTION: MISSING COMPONENTS DETECTED. SYSTEM INCOMPLETE.</p>
-
-    <a href="#" class="btn" onclick="alert('System Lock: Enter first puzzle code to proceed.')">INITIALIZE MISSION</a>
+<!-- ══════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════ -->
+<div id="header">
+  <div class="org">NATIONAL AERONAUTICS AND SPACE ADMINISTRATION — JOHNSON SPACE CENTER</div>
+  <div class="hr-dbl"></div><div class="hr-dbl"></div>
+  <div class="title">MISSION CONTROL — ASTEROID CRISIS — AC-2024-001</div>
+  <div class="hr-dbl"></div><div class="hr-dbl"></div>
+  <div class="sub">PLANETARY DEFENSE EMERGENCY RESPONSE SYSTEM &nbsp;|&nbsp; CLASSIFICATION: TOP SECRET</div>
 </div>
 
+<div class="hr"></div>
+
+<!-- TOP STATUS LINE -->
+<div class="top-fields">
+  <span>SITE <b>JSC-HOUSTON</b></span>
+  <span>STA <b>MCC-H-7</b></span>
+  <span>UTC <b id="clock">00:00:00</b></span>
+  <span>DATE <b id="datestr">--</b></span>
+  <span>CHAN <b>7-ALPHA</b></span>
+  <span>COMMS <b>NOMINAL</b></span>
+  <span>ENCRYPT <b>AES-256</b></span>
+  <span>FRAME <b id="frame-ctr">000000</b></span>
+</div>
+
+<div class="hr"></div>
+
+<!-- TICKER -->
+<div id="ticker">
+  <span class="ticker-inner">
+    ** ALERT ** ASTEROID 2024-NEMESIS ON DIRECT COLLISION COURSE WITH EARTH &nbsp;&nbsp;&nbsp;&nbsp;
+    ** IMPACT T-MINUS 48 HOURS — POINT OF NO RETURN &nbsp;&nbsp;&nbsp;&nbsp;
+    ** ALL PLANETARY DEFENSE PERSONNEL REPORT TO STATIONS IMMEDIATELY &nbsp;&nbsp;&nbsp;&nbsp;
+    ** DEFLECTION MACHINE ASSEMBLY INCOMPLETE — CRITICAL COMPONENTS MISSING &nbsp;&nbsp;&nbsp;&nbsp;
+    ** INTERNATIONAL EMERGENCY PROTOCOLS ENACTED — CLASSIFICATION ALPHA &nbsp;&nbsp;&nbsp;&nbsp;
+    ** THIS TERMINAL IS FOR AUTHORISED PERSONNEL ONLY — CLEARANCE LVL 5 REQUIRED &nbsp;&nbsp;&nbsp;&nbsp;
+  </span>
+</div>
+
+<div class="hr"></div>
+
+<!-- COUNTDOWN -->
+<div id="countdown-row">
+  <span class="cd-lbl">T-MINUS &nbsp;</span>
+  <span class="cd-num" id="cd-h">47</span>
+  <span class="cd-lbl">HRS</span>
+  <span class="cd-colon">:</span>
+  <span class="cd-num" id="cd-m">59</span>
+  <span class="cd-lbl">MIN</span>
+  <span class="cd-colon">:</span>
+  <span class="cd-num" id="cd-s">59</span>
+  <span class="cd-lbl">SEC &nbsp;</span>
+  <span class="cd-lbl">— UNTIL ATMOSPHERIC ENTRY / POINT OF NO RETURN</span>
+</div>
+
+<div class="hr"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     MAIN COLS: THREAT DATA  |  BRIEFING
+══════════════════════════════════════════════════════ -->
+<div class="cols">
+
+  <!-- LEFT -->
+  <div>
+
+    <div class="sect">
+      <div class="sect-hdr">THREAT OBJECT DATA &nbsp;/&nbsp; SYS-TRK-01</div>
+      <div class="hr"></div>
+      <table class="data">
+        <tr><td>DESIGNATION</td>          <td>2024-NEMESIS</td></tr>
+        <tr><td>OBJECT CLASS</td>         <td>APOLLO-TYPE NEA</td></tr>
+        <tr><td>DIAMETER</td>             <td class="val-warn">14.7 KM</td></tr>
+        <tr><td>VELOCITY</td>             <td>32.4 KM/S</td></tr>
+        <tr><td>COMPOSITION</td>          <td>TYPE-M METALLIC</td></tr>
+        <tr><td>TRAJECTORY</td>           <td class="val-crit">DIRECT IMPACT</td></tr>
+        <tr><td>DIST TO EARTH</td>        <td id="dist-live">5,600,000 KM</td></tr>
+        <tr><td>IMPACT ENERGY</td>        <td class="val-warn">1.2 x 10^21 J</td></tr>
+        <tr><td>TORINO SCALE</td>         <td class="val-crit">LEVEL 10 / 10</td></tr>
+        <tr><td>DETECTION SOURCE</td>     <td>CNEOS / JPL</td></tr>
+        <tr><td>DETECTION UTC</td>        <td>2024-032 03:42:11</td></tr>
+        <tr><td>CONF. OBSERVATIONS</td>   <td>847</td></tr>
+        <tr><td>IMPACT PROBABILITY</td>   <td class="val-crit">100.00 %</td></tr>
+        <tr><td>SURVIVAL PROBABILITY</td> <td class="val-crit">0.00 %</td></tr>
+      </table>
+    </div>
+
+    <div class="sect" style="margin-top:14px;">
+      <div class="sect-hdr">ORBITAL ELEMENTS &nbsp;/&nbsp; EPOCH J2024.0</div>
+      <div class="hr"></div>
+      <table class="data">
+        <tr><td>SEMI-MAJOR AXIS (A)</td>  <td>1.4782 AU</td></tr>
+        <tr><td>ECCENTRICITY (E)</td>     <td>0.5833</td></tr>
+        <tr><td>INCLINATION (I)</td>      <td>12.44 DEG</td></tr>
+        <tr><td>LONG. ASC. NODE (O)</td>  <td>047.312 DEG</td></tr>
+        <tr><td>ARG. PERIHELION (W)</td>  <td>291.008 DEG</td></tr>
+        <tr><td>MEAN ANOMALY (M)</td>     <td>188.441 DEG</td></tr>
+      </table>
+    </div>
+
+    <div class="sect" style="margin-top:14px;">
+      <div class="sect-hdr">DEFLECTION MACHINE &nbsp;/&nbsp; ASSEMBLY STATUS</div>
+      <div class="hr"></div>
+      <div class="sys-row"><span class="sys-name">POWER CORE</span>        <span class="sys-bar val-crit">[--------------------]</span><span class="sys-pct val-crit">  MISSING</span></div>
+      <div class="sys-row"><span class="sys-name">TARGETING ARRAY</span>   <span class="sys-bar val-crit">[--------------------]</span><span class="sys-pct val-crit">  MISSING</span></div>
+      <div class="sys-row"><span class="sys-name">IMPULSE COILS</span>     <span class="sys-bar val-crit">[--------------------]</span><span class="sys-pct val-crit">  MISSING</span></div>
+      <div class="sys-row"><span class="sys-name">NAVIGATION CPU</span>    <span class="sys-bar val-warn">[#######-------------]</span><span class="sys-pct val-warn">  35%</span></div>
+      <div class="sys-row"><span class="sys-name">LAUNCH SEQUENCE</span>   <span class="sys-bar"       >[--------------------]</span><span class="sys-pct">  LOCKED</span></div>
+      <div class="sys-row" style="margin-top:4px;border-top:1px solid rgba(255,255,255,0.3);padding-top:4px;">
+        <span class="sys-name">OVERALL READINESS</span>
+        <span class="sys-bar val-crit">[#-------------------]</span>
+        <span class="sys-pct val-crit">  7%</span>
+      </div>
+    </div>
+
+    <div class="sect" style="margin-top:14px;">
+      <div class="sect-hdr">ACTIVE TRACKING &nbsp;/&nbsp; DSN-42</div>
+      <div class="hr"></div>
+      <table class="data">
+        <tr><td>RADAR LOCK</td>      <td class="val-warn">CONFIRMED</td></tr>
+        <tr><td>OPTICAL TRACK</td>   <td>4 STATIONS ACTIVE</td></tr>
+        <tr><td>LAST UPDATE</td>     <td id="last-update">--:--:--</td></tr>
+        <tr><td>RA / DEC</td>        <td>05h 44m / -12.3</td></tr>
+        <tr><td>AZ / EL</td>         <td id="az-el">047.3 / 38.1</td></tr>
+        <tr><td>APPROACH RATE</td>   <td class="val-crit">32.4 KM/S</td></tr>
+        <tr><td>IMPACT COORD</td>    <td class="val-crit">52.3N / 004.9E</td></tr>
+        <tr><td>IMPACT SITE</td>     <td class="val-crit">N. EUROPE</td></tr>
+        <tr><td>DOWNLINK</td>        <td>4.7 MBPS / NOMINAL</td></tr>
+      </table>
+    </div>
+
+  </div><!-- /left -->
+
+  <!-- RIGHT -->
+  <div>
+
+    <div class="sect">
+      <div class="sect-hdr">MISSION BRIEFING &nbsp;/&nbsp; DOC-BRIEF-R4 &nbsp;/&nbsp; EYES ONLY</div>
+      <div class="hr"></div>
+      <div class="briefing-body">
+        <p>AT 03:42 UTC NASA PLANETARY DEFENSE COORDINATION OFFICE CONFIRMED
+        DETECTION OF ASTEROID 2024-NEMESIS ON DIRECT COLLISION COURSE WITH EARTH.
+        OBJECT MEASURES 14.7 KM IN DIAMETER. COMPARABLE IN SIZE TO THE
+        CHICXULUB IMPACTOR RESPONSIBLE FOR K-PG EXTINCTION EVENT 66 MYA.</p>
+
+        <p>IMPACT IS PROJECTED IN 48 HOURS. ONCE OBJECT ENTERS UPPER ATMOSPHERE
+        NO INTERVENTION WILL BE POSSIBLE. KINETIC ENERGY AT IMPACT ESTIMATED AT
+        1.2 X 10^21 JOULES. SUFFICIENT TO TRIGGER GLOBAL EXTINCTION EVENT.
+        MANKIND WILL NOT SURVIVE.</p>
+
+        <p>YOU ARE THE PLANETARY DEFENSE SCIENCE TEAM. THE ONLY PERSONNEL WITH
+        CLEARANCE TO OPERATE THE ASTEROID DEFLECTION MACHINE — AN EXPERIMENTAL
+        DIRECTED-IMPULSE DEVICE CAPABLE OF ALTERING THE ASTEROID TRAJECTORY
+        BY A CRITICAL MARGIN.</p>
+
+        <p>THE MACHINE IS INCOMPLETE. CRITICAL COMPONENTS ARE MISSING. SCATTERED
+        ACROSS THE FACILITY DURING EMERGENCY EVACUATION OF NON-ESSENTIAL PERSONNEL.
+        YOUR TEAM MUST LOCATE ALL MISSING COMPONENTS. ASSEMBLE THE DEVICE.
+        CALCULATE THE CORRECT DEFLECTION VECTOR. INITIATE FIRING SEQUENCE
+        BEFORE THE WINDOW CLOSES.</p>
+
+        <p>WORK TOGETHER. EVERY SECOND COUNTS.<span class="cursor">_</span></p>
+      </div>
+    </div>
+
+    <div class="sect" style="margin-top:12px;">
+      <div class="sect-hdr">PRIMARY OBJECTIVE &nbsp;/&nbsp; MISSION AC-2024-001</div>
+      <div class="hr"></div>
+      <div style="font-size:13px;letter-spacing:.08em;padding:6px 0;line-height:1.8;">
+        SUCCESSFULLY REDIRECT ASTEROID 2024-NEMESIS<br/>
+        AWAY FROM EARTH COLLISION TRAJECTORY<br/>
+        BEFORE T-MINUS 00:00:00
+      </div>
+    </div>
+
+    <div class="sect" style="margin-top:12px;">
+      <div class="sect-hdr">ASSIGNED PERSONNEL &nbsp;/&nbsp; CLEARANCE LVL 5</div>
+      <div class="hr"></div>
+      <div class="pers-row" style="color:var(--txt-dim);font-size:11px;border-bottom:1px solid rgba(255,255,255,.3);padding-bottom:2px;">
+        <span class="pers-id">ID</span>
+        <span class="pers-name">NAME</span>
+        <span class="pers-role">SPECIALTY</span>
+        <span class="pers-stat">STATUS</span>
+      </div>
+      <div class="pers-row"><span class="pers-id">001</span><span class="pers-name">DR. E. VASQUEZ</span>  <span class="pers-role">MISSION COMMANDER / ASTROPHYSICS</span><span class="pers-stat val-warn">ACTIVE</span></div>
+      <div class="pers-row"><span class="pers-id">002</span><span class="pers-name">DR. K. OSEI</span>     <span class="pers-role">SYSTEMS ENGINEER</span>                <span class="pers-stat">READY</span></div>
+      <div class="pers-row"><span class="pers-id">003</span><span class="pers-name">DR. L. CHEN</span>     <span class="pers-role">PHYSICS SPECIALIST</span>              <span class="pers-stat">READY</span></div>
+      <div class="pers-row"><span class="pers-id">004</span><span class="pers-name">SGT. R. MILLS</span>   <span class="pers-role">FIELD OPERATIONS</span>                <span class="pers-stat">READY</span></div>
+      <div class="pers-row"><span class="pers-id">005</span><span class="pers-name">DR. A. PETROV</span>   <span class="pers-role">NUCLEAR PHYSICIST</span>               <span class="pers-stat">READY</span></div>
+    </div>
+
+    <div class="sect" style="margin-top:12px;">
+      <div class="sect-hdr">MISSION PHASES &nbsp;/&nbsp; CURRENT: PHASE 1</div>
+      <div class="hr"></div>
+      <div class="phase-row"><span class="ph-sym ph-live">*</span><span class="ph-name">PHASE 1  ASSEMBLY</span>      <span class="ph-status ph-live">IN PROGRESS</span></div>
+      <div class="phase-row"><span class="ph-sym ph-pend">-</span><span class="ph-name">PHASE 2  CALIBRATION</span>   <span class="ph-status ph-pend">PENDING</span></div>
+      <div class="phase-row"><span class="ph-sym ph-pend">-</span><span class="ph-name">PHASE 3  VECTOR CALC</span>   <span class="ph-status ph-pend">PENDING</span></div>
+      <div class="phase-row"><span class="ph-sym ph-pend">-</span><span class="ph-name">PHASE 4  ARM SEQUENCE</span>  <span class="ph-status ph-pend">PENDING</span></div>
+      <div class="phase-row"><span class="ph-sym ph-pend">-</span><span class="ph-name">PHASE 5  LAUNCH</span>        <span class="ph-status ph-pend">PENDING</span></div>
+      <div class="phase-row"><span class="ph-sym ph-pend">-</span><span class="ph-name">PHASE 6  IMPACT CONFIRM</span><span class="ph-status ph-pend">PENDING</span></div>
+    </div>
+
+    <div class="sect" style="margin-top:12px;">
+      <div class="sect-hdr">SYSTEM EVENT LOG &nbsp;/&nbsp; AUTO-GENERATED</div>
+      <div class="hr"></div>
+      <div id="sys-log"></div>
+    </div>
+
+  </div><!-- /right -->
+</div><!-- /cols -->
+
+<div class="hr" style="margin-top:14px;"></div>
+
+<!-- LAUNCH BUTTON -->
+<div id="launch-btn-wrap">
+  <div style="font-size:11px;color:var(--txt-dim);letter-spacing:.2em;margin-bottom:8px;">
+    *** AUTHORISED PERSONNEL ONLY — SECURITY CLEARANCE LEVEL 5 REQUIRED ***
+  </div>
+  <button id="launch-btn" onclick="enterMission()">
+    [ INITIATE MISSION — ENTER FACILITY ]
+  </button>
+  <div class="btn-note">
+    48H WINDOW ACTIVE &nbsp;|&nbsp; ALL SYSTEMS MONITORING &nbsp;|&nbsp; TEAM ASSEMBLY CONFIRMED
+  </div>
+</div>
+
+<div class="hr" style="margin-top:14px;"></div>
+
+<div class="top-fields" style="margin-top:4px;font-size:10px;">
+  <span>NASA PLANETARY DEFENSE COORDINATION OFFICE</span>
+  <span>MCC-HOUSTON / FLIGHT DIRECTOR CONSOLE / STA-7</span>
+  <span>SECURE CHANNEL AES-256</span>
+  <span>SW VER 4.2.1-R</span>
+</div>
+
+</div><!-- /content -->
+</div><!-- /crt -->
+
+<script>
+function pad(n){ return String(n).padStart(2,'0'); }
+
+// UTC Clock
+function updateClock(){
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    `${pad(n.getUTCHours())}:${pad(n.getUTCMinutes())}:${pad(n.getUTCSeconds())}`;
+  document.getElementById('datestr').textContent =
+    `${n.getUTCFullYear()}-${pad(n.getUTCMonth()+1)}-${pad(n.getUTCDate())}`;
+  document.getElementById('last-update').textContent =
+    `${pad(n.getUTCHours())}:${pad(n.getUTCMinutes())}:${pad(n.getUTCSeconds())}`;
+}
+updateClock(); setInterval(updateClock, 1000);
+
+// Frame counter
+let fc = 0;
+setInterval(()=>{ document.getElementById('frame-ctr').textContent = String(++fc).padStart(6,'0'); }, 33);
+
+// Countdown
+let total = 48 * 3600;
+setInterval(()=>{
+  if(total<=0) return; total--;
+  document.getElementById('cd-h').textContent = pad(Math.floor(total/3600));
+  document.getElementById('cd-m').textContent = pad(Math.floor((total%3600)/60));
+  document.getElementById('cd-s').textContent = pad(total%60);
+}, 1000);
+
+// Live distance
+let dist = 5600000;
+setInterval(()=>{
+  dist -= 0.12;
+  document.getElementById('dist-live').textContent =
+    Math.max(0,Math.round(dist)).toLocaleString() + ' KM';
+}, 100);
+
+// AZ/EL jitter
+setInterval(()=>{
+  document.getElementById('az-el').textContent =
+    `${(47.3+(Math.random()-.5)*.04).toFixed(1)} / ${(38.1+(Math.random()-.5)*.03).toFixed(1)}`;
+}, 2000);
+
+// System log
+const LOGS = [
+  ['SYSTEM BOOT COMPLETE — ALL MONITORS ONLINE',      ''],
+  ['ASTEROID 2024-NEMESIS CONFIRMED — TRACK LOCK',    'log-warn'],
+  ['IMPACT PROBABILITY UPDATED: 100.00%',             'log-crit'],
+  ['DEFLECTION MACHINE POWER CORE: NOT FOUND',        'log-crit'],
+  ['DEFLECTION MACHINE TARGETING ARRAY: NOT FOUND',   'log-crit'],
+  ['NAVIGATION CPU: PARTIAL LOAD — 35%',              'log-warn'],
+  ['PERSONNEL TEAM AC-2024-001 LOGGED IN',            ''],
+  ['MISSION CLOCK ACTIVE — T-MINUS 48:00:00',        'log-warn'],
+  ['RADAR DSN-42 LOCK CONFIRMED',                     ''],
+  ['DOWNLINK ESTABLISHED — 4.7 MBPS',                 ''],
+  ['ENCRYPTION ACTIVE — AES-256',                     ''],
+];
+let logIdx = 0;
+const logEl = document.getElementById('sys-log');
+function addLog(){
+  if(logIdx >= LOGS.length) return;
+  const [msg,cls] = LOGS[logIdx++];
+  const n = new Date();
+  const ts = `${pad(n.getUTCHours())}:${pad(n.getUTCMinutes())}:${pad(n.getUTCSeconds())}`;
+  const row = document.createElement('div');
+  row.className = 'log-line';
+  row.innerHTML = `<span class="log-ts">${ts}</span><span class="log-msg ${cls}">${msg}</span>`;
+  logEl.insertBefore(row, logEl.firstChild);
+  setTimeout(addLog, 700 + Math.random()*1100);
+}
+setTimeout(addLog, 500);
+
+// Enter mission
+function enterMission(){
+  document.body.style.background = '#fff';
+  setTimeout(()=>{ document.body.style.background='#000'; }, 80);
+  setTimeout(()=>{
+    alert('MISSION CONTROL: Proceed to your station, Scientist.\nThe fate of mankind rests with your team.\n\n— NASA Flight Director\nAC-2024-001');
+  }, 150);
+}
+
+// ════════════════════════════════════════════════════════
+//  CRT DISTORTION ENGINE
+//  Draws horizontal slice-tears, static bursts, and
+//  RGB-shift bands onto a fixed canvas overlay.
+// ════════════════════════════════════════════════════════
+(function(){
+  const cvs = document.getElementById('crt-distort');
+  const ctx = cvs.getContext('2d');
+  const content = document.getElementById('content');
+  const rollBand = document.getElementById('roll-band');
+
+  function resize(){
+    cvs.width  = window.innerWidth;
+    cvs.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ── State ──────────────────────────────────────────────
+  let activeGlitch = false;    // are we mid-glitch?
+  let glitchEnd    = 0;        // timestamp glitch finishes
+  let glitchSlices = [];       // array of horizontal slice offsets
+
+  // ── Schedule next glitch ───────────────────────────────
+  function scheduleGlitch(){
+    // Random gap: 4–18 seconds between events
+    const delay = 4000 + Math.random() * 14000;
+    setTimeout(triggerGlitch, delay);
+  }
+
+  // ── Trigger a glitch event ─────────────────────────────
+  function triggerGlitch(){
+    const type = Math.random();
+
+    if(type < 0.45){
+      // TYPE A: quick horizontal tear (short, sharp)
+      runTear(80 + Math.random()*180);
+    } else if(type < 0.75){
+      // TYPE B: rolling scan band sweeping down screen
+      runRollBand();
+    } else if(type < 0.90){
+      // TYPE C: static burst — multiple rapid flickers
+      runStaticBurst();
+    } else {
+      // TYPE D: full-frame RGB shift + content skew
+      runFullShift();
+    }
+    scheduleGlitch();
+  }
+
+  // ── TYPE A: Horizontal slice tear ─────────────────────
+  function runTear(durationMs){
+    activeGlitch = true;
+    glitchEnd = performance.now() + durationMs;
+
+    // Generate 3-8 random horizontal slices
+    const count = 3 + Math.floor(Math.random() * 6);
+    glitchSlices = [];
+    for(let i = 0; i < count; i++){
+      glitchSlices.push({
+        y:      Math.random() * cvs.height,          // y position
+        h:      2 + Math.random() * 18,              // height of slice
+        offset: (Math.random() - 0.5) * 40,          // how far it shifts
+        alpha:  0.15 + Math.random() * 0.35,         // opacity of smear
+        rgb:    Math.random() < 0.5,                 // show RGB fringe?
+      });
+    }
+    setTimeout(()=>{ activeGlitch = false; glitchSlices = []; }, durationMs);
+  }
+
+  // ── TYPE B: Rolling bright band ───────────────────────
+  function runRollBand(){
+    rollBand.classList.remove('rolling');
+    // force reflow
+    void rollBand.offsetWidth;
+    rollBand.classList.add('rolling');
+    setTimeout(()=>{ rollBand.classList.remove('rolling'); }, 1200);
+  }
+
+  // ── TYPE C: Static burst (rapid flicker sequence) ─────
+  function runStaticBurst(){
+    const crt = document.getElementById('crt');
+    let count = 0;
+    const maxFlickers = 4 + Math.floor(Math.random() * 5);
+    function flick(){
+      if(count >= maxFlickers) return;
+      count++;
+      crt.style.opacity = 0.3 + Math.random() * 0.5;
+      // draw static noise on canvas
+      drawStaticNoise(0.08 + Math.random() * 0.12);
+      const next = 30 + Math.random() * 80;
+      setTimeout(()=>{
+        crt.style.opacity = '';
+        ctx.clearRect(0, 0, cvs.width, cvs.height);
+        setTimeout(flick, 20 + Math.random() * 60);
+      }, next);
+    }
+    flick();
+  }
+
+  // ── TYPE D: Full RGB shift + body skew ────────────────
+  function runFullShift(){
+    const dur = 120 + Math.random() * 200;
+    // Apply glitch-shift animation to content
+    content.style.animation = `glitch-shift ${dur}ms steps(1) forwards`;
+    // Apply RGB fringe to all text
+    const allText = document.querySelectorAll('p, div, span, td, th');
+    allText.forEach(el => {
+      el.style.animation = `glitch-rgb ${dur}ms steps(4) forwards`;
+    });
+    // Draw a few horizontal bands on canvas
+    runTear(dur * 0.7);
+    setTimeout(()=>{
+      content.style.animation = 'h-roll 12s infinite';
+      allText.forEach(el => { el.style.animation = ''; });
+    }, dur + 50);
+  }
+
+  // ── Draw static noise onto canvas ─────────────────────
+  function drawStaticNoise(intensity){
+    const W = cvs.width, H = cvs.height;
+    const imageData = ctx.createImageData(W, H);
+    const data = imageData.data;
+    for(let i = 0; i < data.length; i += 4){
+      if(Math.random() < intensity){
+        const v = Math.random() * 200;
+        data[i]   = v * 0.6;   // R — keep bluish
+        data[i+1] = v * 0.7;   // G
+        data[i+2] = v;         // B
+        data[i+3] = Math.random() * 180;
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+  // ── Render loop — draws active slice tears ─────────────
+  let frameN = 0;
+  function render(){
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    frameN++;
+
+    // ── CONSTANT: faint noise grain every frame ───────────
+    // Only redraw noise every 2nd frame (performance)
+    if(frameN % 2 === 0){
+      const grain = ctx.createImageData(cvs.width, cvs.height);
+      const d = grain.data;
+      // sparse — only touch ~2% of pixels
+      const total = d.length / 4;
+      const hits  = Math.floor(total * 0.018);
+      for(let i = 0; i < hits; i++){
+        const px = Math.floor(Math.random() * total);
+        const base = px * 4;
+        const v = 120 + Math.random() * 135;
+        d[base]   = v * 0.5;
+        d[base+1] = v * 0.65;
+        d[base+2] = v;
+        d[base+3] = 18 + Math.random() * 28;
+      }
+      ctx.putImageData(grain, 0, 0);
+    }
+
+    // ── CONSTANT: random single-pixel horizontal line ─────
+    if(Math.random() < 0.12){
+      const ly = Math.floor(Math.random() * cvs.height);
+      const lw = 60 + Math.random() * (cvs.width * 0.6);
+      const lx = Math.random() * (cvs.width - lw);
+      ctx.fillStyle = `rgba(180,210,255,${0.03 + Math.random()*0.07})`;
+      ctx.fillRect(lx, ly, lw, 1);
+    }
+
+    // ── ACTIVE GLITCH: slice tears ────────────────────────
+    if(activeGlitch && glitchSlices.length){
+      glitchSlices.forEach(s => {
+        ctx.fillStyle = `rgba(100, 160, 255, ${s.alpha * 0.6})`;
+        ctx.fillRect(s.offset > 0 ? 0 : s.offset, s.y, cvs.width + Math.abs(s.offset), s.h);
+        if(s.rgb){
+          ctx.fillStyle = `rgba(255, 60, 60, ${s.alpha * 0.25})`;
+          ctx.fillRect(s.offset - 4, s.y, cvs.width, s.h * 0.7);
+          ctx.fillStyle = `rgba(0, 220, 255, ${s.alpha * 0.25})`;
+          ctx.fillRect(s.offset + 4, s.y, cvs.width, s.h * 0.7);
+        }
+        ctx.fillStyle = `rgba(200, 230, 255, ${s.alpha * 1.2})`;
+        ctx.fillRect(0, s.y, cvs.width, 1);
+      });
+      if(Math.random() < 0.08){
+        const ly = Math.random() * cvs.height;
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.05 + Math.random() * 0.1})`;
+        ctx.fillRect(0, ly, cvs.width, 1 + Math.random() * 2);
+      }
+    }
+
+    requestAnimationFrame(render);
+  }
+
+  // ── Kick off ───────────────────────────────────────────
+  render();
+  scheduleGlitch();
+
+})();
+
+</script>
 </body>
 </html>
